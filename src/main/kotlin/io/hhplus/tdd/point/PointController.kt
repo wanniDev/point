@@ -40,7 +40,7 @@ class PointController(
         @PathVariable id: Long,
         @RequestBody amount: Long,
     ): UserPoint {
-        return UserPoint(0, 0, 0)
+        return userPointTable.insertOrUpdate(id, amount)
     }
 
     /**
