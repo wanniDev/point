@@ -55,4 +55,22 @@ class PointControllerTest {
         log.info("useNotEnoughPoint : $exception")
         assertEquals(exception.message, "포인트가 부족합니다.")
     }
+
+    @Test
+    @DisplayName("특정 사용자의 포인트 충전/이용 내역이 없을 경우, 비어있는 리스트를 반환합니다.")
+    fun emptyHistory() {
+        val histories = controller.history(900)
+        log.info("emptyHistory : $histories")
+        assertTrue(histories.isEmpty())
+    }
+
+    @Test
+    @DisplayName("특정 사용자의 포인트 충전/이용 내역이 있을 경우, 해당 내역을 반환합니다.")
+    fun notEmptyHistory() {
+        controller.charge(900, 10000)
+        val histories = controller.history(900)
+        log.info("notEmptyHistory : $histories")
+        assertEquals(histories.size, 1)
+        assertEquals(histories[0].amount, 10000)
+    }
 }
