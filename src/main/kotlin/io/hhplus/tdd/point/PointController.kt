@@ -51,6 +51,10 @@ class PointController(
         @PathVariable id: Long,
         @RequestBody amount: Long,
     ): UserPoint {
-        return UserPoint(0, 0, 0)
+        val userPoint = userPointTable.selectById(id)
+        if (userPoint.point < amount) {
+            throw IllegalArgumentException("포인트가 부족합니다.")
+        }
+        return userPointTable.insertOrUpdate(id, userPoint.point - amount)
     }
 }
