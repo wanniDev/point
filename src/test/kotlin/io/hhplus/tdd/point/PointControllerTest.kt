@@ -3,6 +3,7 @@ package io.hhplus.tdd.point
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -42,7 +43,16 @@ class PointControllerTest {
         assertEquals(point.id, 99)
         assertEquals(point.point, 5000)
         assertTrue(point.updateMillis > 0)
-        println(controller.point(99))
     }
 
+    @Test
+    @DisplayName("포인트 사용 시, 해당 유저의 id에 point가 부족할 경우, IllegalArgumentException을 반환합니다.")
+    fun useNotEnoughPoint() {
+        controller.charge(100, 10000)
+        val exception = assertThrows<IllegalArgumentException> {
+            controller.use(100, 20000)
+        }
+        log.info("useNotEnoughPoint : $exception")
+        assertEquals(exception.message, "포인트가 부족합니다.")
+    }
 }
