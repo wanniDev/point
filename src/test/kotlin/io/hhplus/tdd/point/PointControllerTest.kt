@@ -17,9 +17,9 @@ class PointControllerTest {
     @Test
     @DisplayName("Table에 저장되지 않은 유저의 id로 조회할 경우, 해당 유저의 id에 point는 0 이며, updateMillis는 현재 시간인 UserPoint 객체를 반환합니다.")
     fun notFoundUserPoint() {
-        val point = controller.point(1)
+        val point = controller.point(2)
         log.info("notFoundUserPoint : $point")
-        assertEquals(point.id, 1)
+        assertEquals(point.id, 2)
         assertEquals(point.point, 0)
         assertTrue(point.updateMillis > 0)
     }
@@ -59,7 +59,7 @@ class PointControllerTest {
     @Test
     @DisplayName("특정 사용자의 포인트 충전/이용 내역이 없을 경우, 비어있는 리스트를 반환합니다.")
     fun emptyHistory() {
-        val histories = controller.history(900)
+        val histories = controller.history(888)
         log.info("emptyHistory : $histories")
         assertTrue(histories.isEmpty())
     }
