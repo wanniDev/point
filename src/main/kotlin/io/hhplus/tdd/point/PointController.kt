@@ -1,5 +1,6 @@
 package io.hhplus.tdd.point
 
+import io.hhplus.tdd.database.PointHistoryTable
 import io.hhplus.tdd.database.UserPointTable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -8,7 +9,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/point")
 class PointController(
-    private val userPointTable: UserPointTable
+    private val userPointTable: UserPointTable,
+    private val pointHistoryTable: PointHistoryTable,
 ) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
@@ -29,7 +31,7 @@ class PointController(
     fun history(
         @PathVariable id: Long,
     ): List<PointHistory> {
-        return emptyList()
+        return pointHistoryTable.selectAllByUserId(id);
     }
 
     /**
@@ -40,6 +42,7 @@ class PointController(
         @PathVariable id: Long,
         @RequestBody amount: Long,
     ): UserPoint {
+        pointHistoryTable.insert(id, amount, TransactionType.CHARGE, System.currentTimeMillis())
         return userPointTable.insertOrUpdate(id, amount)
     }
 
@@ -53,8 +56,10 @@ class PointController(
     ): UserPoint {
         val userPoint = userPointTable.selectById(id)
         if (userPoint.point < amount) {
+            logger.error("$id 사용자의 포인트가 부족합니다.")
             throw IllegalArgumentException("포인트가 부족합니다.")
         }
+        pointHistoryTable.insert(id, amount, TransactionType.USE, System.currentTimeMillis())
         return userPointTable.insertOrUpdate(id, userPoint.point - amount)
     }
 }
