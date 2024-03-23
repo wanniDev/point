@@ -2,11 +2,13 @@ package io.hhplus.tdd.point
 
 import io.hhplus.tdd.database.PointHistoryTable
 import io.hhplus.tdd.database.UserPointTable
+import io.hhplus.tdd.point.domain.UserPoint
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 @RestController
@@ -17,7 +19,7 @@ class PointController(
 ) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private val locks = ConcurrentHashMap<Long, ReentrantLock>()
-    private val executorService = Executors.newFixedThreadPool(10)
+    
     /**
      * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
      */
@@ -47,18 +49,14 @@ class PointController(
         @RequestBody amount: Long,
     ): UserPoint {
         val lock = locks.computeIfAbsent(id) { ReentrantLock() }
-        if (lock.tryLock()) {
+        if (lock.tryLock(5, TimeUnit.SECONDS)) {
             try {
                 return chargePoint(id, amount)
             } finally {
                 lock.unlock()
             }
-        } else {
-            executorService.submit {
-                chargePoint(id, amount)
-            }
-            return userPointTable.selectById(id)
         }
+        throw RuntimeException("Timeout")
     }
 
     private fun chargePoint(id: Long, amount: Long): UserPoint {
@@ -75,18 +73,14 @@ class PointController(
         @RequestBody amount: Long,
     ): UserPoint {
         val lock = locks.computeIfAbsent(id) { ReentrantLock() }
-        if (lock.tryLock()) {
+        if (lock.tryLock(5, TimeUnit.SECONDS)) {
             try {
                 return usePoint(id, amount)
             } finally {
                 lock.unlock()
             }
-        } else {
-            executorService.submit {
-                usePoint(id, amount)
-            }
-            return userPointTable.selectById(id)
         }
+        throw RuntimeException("Timeout")
     }
 
     private fun usePoint(id: Long, amount: Long): UserPoint {
