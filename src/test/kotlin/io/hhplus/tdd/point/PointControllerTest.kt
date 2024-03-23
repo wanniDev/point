@@ -83,10 +83,10 @@ class PointControllerTest {
         val balance = controller.point(4).point
         assertEquals(0, balance)
 
-        CompletableFuture.runAsync {
-            controller.charge(4, 10000)
-            controller.use(4, 5000)
-        }.join()
+        CompletableFuture.allOf(
+            CompletableFuture.runAsync { controller.charge(4, 10000) },
+            CompletableFuture.runAsync { controller.use(4, 5000) }
+        ).join()
 
         val point = controller.point(4)
         log.info("chargeAndUseConcurrent : $point")
