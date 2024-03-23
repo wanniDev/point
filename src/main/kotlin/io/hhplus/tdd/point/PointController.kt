@@ -1,20 +1,23 @@
 package io.hhplus.tdd.point
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.hhplus.tdd.database.PointHistoryTable
 import io.hhplus.tdd.database.UserPointTable
 import io.hhplus.tdd.point.domain.UserPoint
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.*
+import java.util.concurrent.Executors
 
 @RestController
 @RequestMapping("/point")
 class PointController(
     private val userPointTable: UserPointTable,
     private val pointHistoryTable: PointHistoryTable,
-    private val exclusiveLockManager: ExclusiveLockManager
+    private val exclusiveLockManager: ExclusiveLockManager,
 ) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
+    private val executor = Executors.newFixedThreadPool(10)
 
     /**
      * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
@@ -50,7 +53,11 @@ class PointController(
     }
 
     private fun chargePoint(id: Long, amount: Long): UserPoint {
-        pointHistoryTable.insert(id, amount, TransactionType.CHARGE, System.currentTimeMillis())
+        executor.submit {
+            val currentNanoMillis = System.nanoTime()
+            logger.info("$id, $amount, ${TransactionType.CHARGE}, $currentNanoMillis")
+            pointHistoryTable.insert(id, amount, TransactionType.CHARGE, currentNanoMillis)
+        }
         return exclusiveLockManager.execute(id) {
             val userPoint = userPointTable.selectById(id)
             userPointTable.insertOrUpdate(id, userPoint.point + amount)
@@ -71,7 +78,11 @@ class PointController(
     }
 
     private fun usePoint(id: Long, amount: Long): UserPoint {
-        pointHistoryTable.insert(id, amount, TransactionType.USE, System.currentTimeMillis())
+        executor.submit {
+            val currentNanoMillis = System.nanoTime()
+            logger.info("$id, $amount, ${TransactionType.USE}, $currentNanoMillis")
+            pointHistoryTable.insert(id, amount, TransactionType.USE, currentNanoMillis)
+        }
         return exclusiveLockManager.execute(id) {
             val userPoint = userPointTable.selectById(id)
             if (userPoint.point < amount) {
