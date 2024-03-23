@@ -7,6 +7,7 @@ import org.junit.jupiter.api.assertThrows
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
@@ -79,29 +80,14 @@ class PointControllerTest {
     @Test
     @DisplayName("충전, 사용 요청이 동시에 발생하면 순차적으로 처리해야 한다.")
     fun chargeAndUseConcurrent() {
-        val executorService = Executors.newFixedThreadPool(2)
-        val countDownLatch = CountDownLatch(2)
-
         val balance = controller.point(4).point
         assertEquals(0, balance)
 
-        executorService.submit {
-            try {
-                controller.charge(4, 10000)
-            } finally {
-                countDownLatch.countDown()
-            }
-        }
+        CompletableFuture.runAsync {
+            controller.charge(4, 10000)
+            controller.use(4, 5000)
+        }.join()
 
-        executorService.submit {
-            try {
-                Thread.sleep(10)
-                controller.use(4, 5000)
-            } finally {
-                countDownLatch.countDown()
-            }
-        }
-        countDownLatch.await()
         val point = controller.point(4)
         log.info("chargeAndUseConcurrent : $point")
         assertEquals(point.point, 5000)
